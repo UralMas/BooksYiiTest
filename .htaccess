@@ -1,0 +1,12 @@
+# В корневой папке проекта (не в web!)
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+
+    # Если запрос не к существующему файлу или папке
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Перенаправляем все запросы на web/index.php
+    RewriteRule ^$ /web/ [L]
+    RewriteRule (.*) /web/$1 [L]
+</IfModule>
