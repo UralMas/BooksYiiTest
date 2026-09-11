@@ -73,26 +73,19 @@ class SiteController extends Controller
             throw new NotFoundHttpException('Автор не найден');
         }
 
-        $books = $author->getBooks()
-            ->orderBy(['year' => SORT_DESC, 'title' => SORT_ASC])
-            ->all();
-
-        $subscription = new Subscription();
         if (Yii::$app->request->isPost && !Yii::$app->user->isGuest) {
             Yii::$app->session->setFlash('error', 'Только неавторизованные пользователи могут подписываться');
         }
 
-        if ($subscription->load(Yii::$app->request->post()) && Yii::$app->user->isGuest) {
-            $subscription->author_id = $author->id;
-            if ($subscription->save()) {
-                Yii::$app->session->setFlash('success', "Вы успешно подписаны на автора {$author->full_name}");
-                return $this->refresh();
-            }
+        $subscription = new Subscription();
+        if ($subscription->load(Yii::$app->request->post()) && $subscription->saveForAuthor($author)) {
+            Yii::$app->session->setFlash('success', "Вы успешно подписаны на автора {$author->full_name}");
+            return $this->refresh();
         }
 
         return $this->render('author', [
             'author' => $author,
-            'books' => $books,
+            'books' => $author->getBooksSorted(),
             'subscription' => $subscription,
         ]);
     }

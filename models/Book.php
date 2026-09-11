@@ -3,6 +3,7 @@
 namespace app\models;
 
 use Yii;
+use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 use yii\web\UploadedFile;
 
@@ -29,7 +30,7 @@ class Book extends ActiveRecord
         ];
     }
 
-    public function getAuthors()
+    public function getAuthors(): ActiveQuery
     {
         return $this->hasMany(Author::class, ['id' => 'author_id'])
             ->viaTable('book_author', ['book_id' => 'id']);
@@ -41,6 +42,51 @@ class Book extends ActiveRecord
     public function getAuthorNames(): string
     {
         return implode(', ', array_column($this->authors, 'full_name'));
+    }
+
+    /*
+     * Сохранение книги с изображением и связями с авторами
+     */
+    public function saveWithImageAndAuthors(array &$selectedAuthors, bool $update = false): bool
+    {
+        $selectedAuthors = Yii::$app->request->post('selectedAuthors', []);
+
+        $this->imageFile = UploadedFile::getInstance($this, 'imageFile');
+
+        if (!$this->validate()) {
+            return false;
+        }
+
+        if (!$update) {
+            $this->save();
+        } else {
+            // Удаляем старые связи с авторами
+            BookAuthor::deleteAll(['book_id' => $this->id]);
+
+            $oldImage = $this->cover_image;
+        }
+
+        // Сохраняем связи с авторами
+        if (!empty($selectedAuthors)) {
+            foreach ($selectedAuthors as $authorId) {
+                $bookAuthor = new BookAuthor();
+                $bookAuthor->book_id = $this->id;
+                $bookAuthor->author_id = $authorId;
+                $bookAuthor->save();
+            }
+        }
+
+        // Загружаем картинку
+        if ($this->imageFile) {
+            if ($this->upload()) {
+                $this->save(false);
+            }
+        } elseif ($update) {
+            $this->cover_image = $oldImage;
+            $this->save(false);
+        }
+
+        return true;
     }
 
     /*

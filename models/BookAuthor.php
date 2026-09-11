@@ -2,6 +2,7 @@
 
 namespace app\models;
 
+use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
 class BookAuthor extends ActiveRecord
@@ -20,12 +21,12 @@ class BookAuthor extends ActiveRecord
         ];
     }
 
-    public function getBook()
+    public function getBook(): ActiveQuery
     {
         return $this->hasOne(Book::class, ['id' => 'book_id']);
     }
 
-    public function getAuthor()
+    public function getAuthor(): ActiveQuery
     {
         return $this->hasOne(Author::class, ['id' => 'author_id']);
     }

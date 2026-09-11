@@ -42,40 +42,14 @@ class BookController extends Controller
         $model = new Book();
         $selectedAuthors = [];
 
-        if ($model->load(Yii::$app->request->post())) {
-            $selectedAuthors = Yii::$app->request->post('selectedAuthors', []);
-            
-            $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
-            
-            if ($model->validate()) {
-                $model->save();
-                
-                // Сохраняем связи с авторами
-                if (!empty($selectedAuthors)) {
-                    foreach ($selectedAuthors as $authorId) {
-                        $bookAuthor = new BookAuthor();
-                        $bookAuthor->book_id = $model->id;
-                        $bookAuthor->author_id = $authorId;
-                        $bookAuthor->save();
-                    }
-                }
-                
-                // Загружаем картинку
-                if ($model->imageFile) {
-                    $model->upload();
-                    $model->save(false);
-                }
-                
-                Yii::$app->session->setFlash('success', 'Книга успешно добавлена');
-                return $this->redirect(['site/author', 'id' => $selectedAuthors[0] ?? 0]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $model->saveWithImageAndAuthors($selectedAuthors)) {
+            Yii::$app->session->setFlash('success', 'Книга успешно добавлена');
+            return $this->redirect(['site/author', 'id' => $selectedAuthors[0] ?? 0]);
         }
-
-        $authors = Author::find()->orderBy(['full_name' => SORT_ASC])->all();
         
         return $this->render('create', [
             'model' => $model,
-            'authors' => $authors,
+            'authors' => Author::getListSorted(),
             'selectedAuthors' => $selectedAuthors,
         ]);
     }
@@ -88,47 +62,15 @@ class BookController extends Controller
         }
 
         $selectedAuthors = array_column($model->authors, 'id');
-        $oldImage = $model->cover_image;
 
-        if ($model->load(Yii::$app->request->post())) {
-            $selectedAuthors = Yii::$app->request->post('selectedAuthors', []);
-            
-            $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
-            
-            if ($model->validate()) {
-                // Удаляем старые связи
-                BookAuthor::deleteAll(['book_id' => $model->id]);
-                
-                // Добавляем новые связи
-                if (!empty($selectedAuthors)) {
-                    foreach ($selectedAuthors as $authorId) {
-                        $bookAuthor = new BookAuthor();
-                        $bookAuthor->book_id = $model->id;
-                        $bookAuthor->author_id = $authorId;
-                        $bookAuthor->save();
-                    }
-                }
-                
-                // Загружаем новую картинку
-                if ($model->imageFile) {
-                    if ($model->upload()) {
-                        $model->save(false);
-                    }
-                } else {
-                    $model->cover_image = $oldImage;
-                    $model->save(false);
-                }
-                
-                Yii::$app->session->setFlash('success', 'Книга успешно обновлена');
-                return $this->redirect(['site/author', 'id' => $selectedAuthors[0] ?? 0]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $model->saveWithImageAndAuthors($selectedAuthors, true)) {
+            Yii::$app->session->setFlash('success', 'Книга успешно обновлена');
+            return $this->redirect(['site/author', 'id' => $selectedAuthors[0] ?? 0]);
         }
-
-        $authors = Author::find()->orderBy(['full_name' => SORT_ASC])->all();
         
         return $this->render('update', [
             'model' => $model,
-            'authors' => $authors,
+            'authors' => Author::getListSorted(),
             'selectedAuthors' => $selectedAuthors,
         ]);
     }

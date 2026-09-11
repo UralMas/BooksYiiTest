@@ -3,6 +3,7 @@
 namespace app\models;
 
 use Yii;
+use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
 class Author extends ActiveRecord
@@ -21,15 +22,33 @@ class Author extends ActiveRecord
         ];
     }
 
-    public function getBooks()
+    public function getBooks(): ActiveQuery
     {
         return $this->hasMany(Book::class, ['id' => 'book_id'])
             ->viaTable('book_author', ['author_id' => 'id']);
     }
 
-    public function getSubscriptions()
+    public function getSubscriptions(): ActiveQuery
     {
         return $this->hasMany(Subscription::class, ['author_id' => 'id']);
+    }
+
+    /*
+     * Получение отсортированного списка книг автора
+     */
+    public function getBooksSorted(): array
+    {
+        return $this->getBooks()
+            ->orderBy(['year' => SORT_DESC, 'title' => SORT_ASC])
+            ->all();
+    }
+
+    /*
+     * Получение отсортированного списка авторов
+     */
+    public static function getListSorted(): array
+    {
+        return self::find()->orderBy(['full_name' => SORT_ASC])->all();
     }
 
     /*

@@ -28,6 +28,16 @@ class Subscription extends ActiveRecord
         return $this->hasOne(Author::class, ['id' => 'author_id']);
     }
 
+    /*
+     * Сохранение подписки на автора
+     */
+    public function saveForAuthor(Author $author)
+    {
+        $this->author_id = $author->id;
+
+        return $this->save();
+    }
+
     public function attributeLabels(): array
     {
         return [
